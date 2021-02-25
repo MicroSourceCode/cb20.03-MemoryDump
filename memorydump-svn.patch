@@ -1,6 +1,6 @@
-diff -ruN codeblocks_sf-master/src/include/cbdebugger_interfaces.h codeblocks_sf-master1/src/include/cbdebugger_interfaces.h
---- codeblocks_sf-master/src/include/cbdebugger_interfaces.h	2021-02-07 16:14:29.000000000 +0300
-+++ codeblocks_sf-master1/src/include/cbdebugger_interfaces.h	2021-02-13 13:40:05.000000000 +0300
+diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebugger_interfaces.h
+--- trunk/src/include/cbdebugger_interfaces.h	2021-02-18 13:48:28.000000000 +0300
++++ trunk-new/src/include/cbdebugger_interfaces.h	2021-02-25 21:49:52.468532983 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -9,18 +9,9 @@ diff -ruN codeblocks_sf-master/src/include/cbdebugger_interfaces.h codeblocks_sf
          virtual void AddError(const wxString& err) = 0;
          virtual void AddHexByte(const wxString& addr, const wxString& hexbyte) = 0;
          virtual void EnableWindow(bool enable) = 0;
-diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master1/src/src/examinememorydlg.cpp
---- codeblocks_sf-master/src/src/examinememorydlg.cpp	2021-02-07 16:14:29.000000000 +0300
-+++ codeblocks_sf-master1/src/src/examinememorydlg.cpp	2021-02-13 13:40:05.000000000 +0300
-@@ -1,7 +1,7 @@
- /*
-  * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
-  * http://www.gnu.org/licenses/gpl-3.0.html
-- *
-+ * Modified MicroSourceCode https://github.com/MicroSourceCode
-  * $Revision$
-  * $Id$
-  * $HeadURL$
+diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
+--- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-02-25 21:56:55.374035220 +0300
 @@ -22,11 +22,10 @@
  #include "examinememorydlg.h"
  #include "debuggermanager.h"
@@ -34,7 +25,7 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -43,12 +42,19 @@
+@@ -43,31 +42,76 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -55,11 +46,48 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
      Clear();
  }
  
-@@ -60,14 +66,19 @@
+ void ExamineMemoryDlg::Begin()
+ {
+     m_pText->Freeze();
++    if  ( m_pText->GetLastPosition() )
++       m_start = true;
++    else
++       m_start = false;
+ }
+ 
  void ExamineMemoryDlg::End()
  {
++    if (m_setValue)
++    {
++       m_pText->SetInsertionPoint(0);
++       m_setValue = false;
++    }
++    else if ( m_start )
++    {
++       int w, h, clientHeight;
++       m_pText->GetClientSize(&w, &h);
++
++       clientHeight = (h + (h % m_pText->GetCharHeight())) / m_pText->GetCharHeight();
++       //clientHeight = h / m_pText->GetCharHeight();
++       unsigned maxScrollPosition = m_pText->GetScrollRange(wxVERTICAL)- h + 2;
++       unsigned position = m_pText->GetScrollPos(wxVERTICAL);
++
++       if ( position < maxScrollPosition )
++       {
++			  int result = position / m_pText->GetCharHeight() + clientHeight;
++                          int parttext, col;
++                          parttext = m_pText->GetLineLength(m_pText->GetNumberOfLines() / 2) + 1;
++
++                          col = result < m_result ? m_result - result : result - m_result;
++
++                          if  ( col > 2 )
++                               m_result = result;
++
++	  m_pText->ShowPosition(m_result * parttext - parttext + 1);
++        //  Manager::Get()->GetLogManager()->DebugLog(_T("\nPosition1: ") + wxString::Format(wxT("%i"), (int)m_pText->GetBorder()));
++       }
++    }
      m_pText->Thaw();
-+    m_pText->SetInsertionPoint(0);
  }
  
  void ExamineMemoryDlg::Clear()
@@ -76,7 +104,7 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
          m_LineText[i] = _T(' ');
  }
  
-@@ -83,6 +94,13 @@
+@@ -83,6 +127,13 @@
      return a;
  }
  
@@ -90,7 +118,7 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
  void ExamineMemoryDlg::AddError(const wxString& err)
  {
      m_pText->AppendText(err + _T('\n'));
-@@ -91,9 +109,9 @@
+@@ -91,9 +142,9 @@
  void ExamineMemoryDlg::AddHexByte(const wxString& addr, const wxString& hexbyte)
  {
  //    m_pDbg->Log(_T("AddHexByte(") + addr + _T(", ") + hexbyte + _T(')'));
@@ -102,13 +130,11 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
      {
          // because we 'll be appending each row *after* we have consumed it
          // and then "addr" will point to the next row's starting address,
-@@ -104,34 +122,35 @@
-         m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
+@@ -105,33 +156,34 @@
      }
  
--#define HEX_OFFSET(a) (a*3)
+ #define HEX_OFFSET(a) (a*3)
 -#define CHAR_OFFSET(a) (16*3 + 3 + a)
-+  #define HEX_OFFSET(a) (a*3)
 +//#define CHAR_OFFSET(a) (16*3 + 3 + a)
  
      unsigned long hb;
@@ -152,17 +178,31 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.cpp codeblocks_sf-master
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,6 +159,7 @@
+@@ -140,7 +192,10 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
+-
 +    c->Write(wxT("/common/examine_memory/columns_to_show"), GetCols());
- 
++    m_setValue = true;
++    m_start = false;
++    m_result = 0;
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
-diff -ruN codeblocks_sf-master/src/src/examinememorydlg.h codeblocks_sf-master1/src/src/examinememorydlg.h
---- codeblocks_sf-master/src/src/examinememorydlg.h	2021-02-07 16:14:29.000000000 +0300
-+++ codeblocks_sf-master1/src/src/examinememorydlg.h	2021-02-13 13:40:05.000000000 +0300
+ }
+@@ -155,6 +210,9 @@
+     XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
+ 
+     cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
++    m_setValue = true;
++    m_start = false;
++    m_result = 0;
+     if (plugin)
+         plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
+ 
+diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
+--- trunk/src/src/examinememorydlg.h	2021-02-18 13:48:20.000000000 +0300
++++ trunk-new/src/src/examinememorydlg.h	2021-02-25 21:52:53.626924098 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -179,20 +219,23 @@ diff -ruN codeblocks_sf-master/src/src/examinememorydlg.h codeblocks_sf-master1/
          void AddError(const wxString& err) override;
          void AddHexByte(const wxString& addr, const wxString& hexbyte) override;
          void EnableWindow(bool enable) override;
-@@ -35,7 +37,9 @@
+@@ -35,7 +37,12 @@
      private:
          wxTextCtrl* m_pText;
          size_t m_ByteCounter;
 -        wxChar m_LineText[67]; // 16*3 "7F " + 3 "   " + 16 "."
 +        unsigned m_ColumnsCtrl;
 +        unsigned m_PartLength;
++        bool m_setValue = false;
++        bool m_start = false;
++        int m_result = 0;
 +        wxChar m_LineText[128];
          uint64_t m_LastRowStartingAddress;
      private:
          DECLARE_EVENT_TABLE()
-diff -ruN codeblocks_sf-master/src/src/resources/memdump.xrc codeblocks_sf-master1/src/src/resources/memdump.xrc
---- codeblocks_sf-master/src/src/resources/memdump.xrc	2021-02-07 16:14:29.000000000 +0300
-+++ codeblocks_sf-master1/src/src/resources/memdump.xrc	2021-02-13 13:40:05.000000000 +0300
+diff -ruN trunk/src/src/resources/memdump.xrc trunk-new/src/src/resources/memdump.xrc
+--- trunk/src/src/resources/memdump.xrc	2021-02-18 13:48:23.000000000 +0300
++++ trunk-new/src/src/resources/memdump.xrc	2021-02-25 21:49:52.472532867 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
