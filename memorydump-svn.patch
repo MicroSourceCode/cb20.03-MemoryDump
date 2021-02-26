@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-02-25 21:56:55.374035220 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-02-26 21:17:39.935634015 +0300
 @@ -22,11 +22,10 @@
  #include "examinememorydlg.h"
  #include "debuggermanager.h"
@@ -25,7 +25,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -43,31 +42,76 @@
+@@ -43,31 +42,74 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -49,10 +49,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::Begin()
  {
      m_pText->Freeze();
-+    if  ( m_pText->GetLastPosition() )
-+       m_start = true;
-+    else
-+       m_start = false;
++    m_start = m_pText->GetLastPosition() ? true : false;
  }
  
  void ExamineMemoryDlg::End()
@@ -66,15 +63,16 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +    {
 +       int w, h, clientHeight;
 +       m_pText->GetClientSize(&w, &h);
++       charHeight = m_pText->GetCharHeight();
 +
-+       clientHeight = (h + (h % m_pText->GetCharHeight())) / m_pText->GetCharHeight();
++       clientHeight = (h + (h % charHeight)) / charHeight;
 +       //clientHeight = h / m_pText->GetCharHeight();
 +       unsigned maxScrollPosition = m_pText->GetScrollRange(wxVERTICAL)- h + 2;
 +       unsigned position = m_pText->GetScrollPos(wxVERTICAL);
 +
 +       if ( position < maxScrollPosition )
 +       {
-+			  int result = position / m_pText->GetCharHeight() + clientHeight;
++			  int result = position / charHeight + clientHeight;
 +                          int parttext, col;
 +                          parttext = m_pText->GetLineLength(m_pText->GetNumberOfLines() / 2) + 1;
 +
@@ -104,7 +102,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
          m_LineText[i] = _T(' ');
  }
  
-@@ -83,6 +127,13 @@
+@@ -83,6 +125,13 @@
      return a;
  }
  
@@ -118,7 +116,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::AddError(const wxString& err)
  {
      m_pText->AppendText(err + _T('\n'));
-@@ -91,9 +142,9 @@
+@@ -91,9 +140,9 @@
  void ExamineMemoryDlg::AddHexByte(const wxString& addr, const wxString& hexbyte)
  {
  //    m_pDbg->Log(_T("AddHexByte(") + addr + _T(", ") + hexbyte + _T(')'));
@@ -130,7 +128,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      {
          // because we 'll be appending each row *after* we have consumed it
          // and then "addr" will point to the next row's starting address,
-@@ -105,33 +156,34 @@
+@@ -105,33 +154,31 @@
      }
  
  #define HEX_OFFSET(a) (a*3)
@@ -159,11 +157,8 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 -        m_LineText[23] = _T('|'); // put a "separator" in the middle (just to ease reading a bit)
 +       
 +		 m_pText->AppendText(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
-+		 for (unsigned i = 0; i < (m_PartLength + m_ColumnsCtrl); ++i)
-+			m_pText->AppendText(m_LineText[i]);
-+		
-+//		for (int i = 0; i < (m_PartLength + m_ColumnsCtrl); ++i)
-+//            m_LineText[i] = _T(' ');
++                 wxString mystring2(m_LineText);
++                 m_pText->AppendText(mystring2.Left(m_PartLength + m_ColumnsCtrl));
  
 -        m_pText->AppendText(wxString::Format(_T("0x%" PRIx64 ": %.67s"), m_LastRowStartingAddress, m_LineText));
 -        for (int i = 0; i < 67; ++i)
@@ -178,7 +173,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,7 +192,10 @@
+@@ -140,7 +187,10 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -190,7 +185,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -155,6 +210,9 @@
+@@ -155,6 +205,9 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
