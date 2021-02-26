@@ -1,6 +1,6 @@
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src/src/examinememorydlg.cpp
 --- codeblocks-20.03/src/src/examinememorydlg.cpp	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-02-25 21:08:02.009395829 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-02-26 21:37:54.658145113 +0300
 @@ -1,7 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -18,7 +18,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -41,31 +42,77 @@
+@@ -41,31 +42,73 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -42,11 +42,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  void ExamineMemoryDlg::Begin()
  {
      m_pText->Freeze();
-+
-+    if  ( m_pText->GetLastPosition() )
-+       m_start = true;
-+    else
-+       m_start = false;
++    m_start = m_pText->GetLastPosition() ? true : false;
  }
  
  void ExamineMemoryDlg::End()
@@ -61,15 +57,15 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +    {
 +       int w, h, clientHeight;
 +       m_pText->GetClientSize(&w, &h);
-+
-+       clientHeight = (h + (h % m_pText->GetCharHeight())) / m_pText->GetCharHeight();
++       charHeight = m_pText->GetCharHeight();
++       clientHeight = (h + (h % charHeight)) / charHeight;
 +       //clientHeight = h / m_pText->GetCharHeight();
 +       unsigned maxScrollPosition = m_pText->GetScrollRange(wxVERTICAL)- h + 2;
 +       unsigned position = m_pText->GetScrollPos(wxVERTICAL);
 +
 +       if ( position < maxScrollPosition )
 +       {
-+			  int result = position / m_pText->GetCharHeight() + clientHeight;
++			  int result = position / charHeight + clientHeight;
 +                          int parttext, col;
 +                          parttext = m_pText->GetLineLength(m_pText->GetNumberOfLines() / 2) + 1;
 +
@@ -99,7 +95,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
          m_LineText[i] = _T(' ');
  }
  
-@@ -81,6 +128,13 @@
+@@ -81,6 +124,13 @@
      return a;
  }
  
@@ -113,7 +109,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  void ExamineMemoryDlg::AddError(const wxString& err)
  {
      m_pText->AppendText(err + _T('\n'));
-@@ -89,7 +143,7 @@
+@@ -89,7 +139,7 @@
  void ExamineMemoryDlg::AddHexByte(const wxString& addr, const wxString& hexbyte)
  {
  //    m_pDbg->Log(_T("AddHexByte(") + addr + _T(", ") + hexbyte + _T(')'));
@@ -122,7 +118,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  
      if (m_LastRowStartingAddress == 0)
      {
-@@ -102,37 +156,35 @@
+@@ -102,37 +152,32 @@
          addr.ToULong(&m_LastRowStartingAddress, 16);
      }
  
@@ -153,11 +149,8 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -        m_LineText[23] = _T('|'); // put a "separator" in the middle (just to ease reading a bit)
 +       
 +		 m_pText->AppendText(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
-+		 for (unsigned i = 0; i < (m_PartLength + m_ColumnsCtrl); ++i)
-+			m_pText->AppendText(m_LineText[i]);
-+		
-+//		for (int i = 0; i < (m_PartLength + m_ColumnsCtrl); ++i)
-+//            m_LineText[i] = _T(' ');
++                 wxString mystring2(m_LineText);
++                 m_pText->AppendText(mystring2.Left(m_PartLength + m_ColumnsCtrl));
  
 -        unsigned long a;
 -        addr.ToULong(&a, 16);
@@ -175,7 +168,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -141,6 +193,11 @@
+@@ -141,6 +186,11 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -187,7 +180,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
-@@ -157,6 +214,9 @@
+@@ -157,6 +207,9 @@
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
      if (plugin)
@@ -201,7 +194,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/src/examinememorydlg.h
 --- codeblocks-20.03/src/src/examinememorydlg.h	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-02-25 20:54:50.839198888 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-02-26 21:30:40.730108815 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -234,7 +227,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
          DECLARE_EVENT_TABLE()
 diff -ruN codeblocks-20.03/src/src/resources/memdump.xrc codeblocks-20.03-new/src/src/resources/memdump.xrc
 --- codeblocks-20.03/src/src/resources/memdump.xrc	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-02-25 20:53:02.811220639 +0300
++++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-02-26 21:30:40.730108815 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
