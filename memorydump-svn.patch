@@ -1,6 +1,6 @@
 diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebugger_interfaces.h
 --- trunk/src/include/cbdebugger_interfaces.h	2021-02-18 13:48:28.000000000 +0300
-+++ trunk-new/src/include/cbdebugger_interfaces.h	2021-02-27 17:14:11.246507187 +0300
++++ trunk-new/src/include/cbdebugger_interfaces.h	2021-02-27 21:24:53.325382982 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-02-27 17:16:46.311938774 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-02-27 21:25:32.629746135 +0300
 @@ -22,11 +22,10 @@
  #include "examinememorydlg.h"
  #include "debuggermanager.h"
@@ -25,7 +25,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -43,32 +42,79 @@
+@@ -43,32 +42,80 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -87,6 +87,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +	  m_pText->ShowPosition(m_result * parttext - parttext + 1);
 +        //  Manager::Get()->GetLogManager()->DebugLog(_T("\nPosition1: ") + wxString::Format(wxT("%i"), (int)m_pText->GetBorder()));
 +       }
++	else
 +       {
 +	m_pText->ShowPosition(m_pText->GetLastPosition());
 +       }
@@ -109,7 +110,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  }
  
  wxString ExamineMemoryDlg::GetBaseAddress()
-@@ -83,17 +129,24 @@
+@@ -83,17 +130,24 @@
      return a;
  }
  
@@ -137,7 +138,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      {
          // because we 'll be appending each row *after* we have consumed it
          // and then "addr" will point to the next row's starting address,
-@@ -105,33 +158,31 @@
+@@ -105,33 +159,31 @@
      }
  
  #define HEX_OFFSET(a) (a*3)
@@ -184,7 +185,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,7 +191,10 @@
+@@ -140,7 +192,10 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -196,7 +197,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -155,6 +209,9 @@
+@@ -155,6 +210,9 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
@@ -208,7 +209,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  
 diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
 --- trunk/src/src/examinememorydlg.h	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.h	2021-02-27 17:14:11.250507223 +0300
++++ trunk-new/src/src/examinememorydlg.h	2021-02-27 21:24:53.325382982 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -241,7 +242,7 @@ diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
          DECLARE_EVENT_TABLE()
 diff -ruN trunk/src/src/resources/memdump.xrc trunk-new/src/src/resources/memdump.xrc
 --- trunk/src/src/resources/memdump.xrc	2021-02-18 13:48:23.000000000 +0300
-+++ trunk-new/src/src/resources/memdump.xrc	2021-02-27 17:14:11.250507223 +0300
++++ trunk-new/src/src/resources/memdump.xrc	2021-02-27 21:24:53.325382982 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
