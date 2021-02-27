@@ -57,7 +57,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +    {
 +       int w, h, clientHeight;
 +       m_pText->GetClientSize(&w, &h);
-+       charHeight = m_pText->GetCharHeight();
++       int charHeight = m_pText->GetCharHeight();
 +       clientHeight = (h + (h % charHeight)) / charHeight;
 +       //clientHeight = h / m_pText->GetCharHeight();
 +       unsigned maxScrollPosition = m_pText->GetScrollRange(wxVERTICAL)- h + 2;
