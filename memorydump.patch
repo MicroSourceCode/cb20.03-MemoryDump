@@ -1,6 +1,6 @@
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src/src/examinememorydlg.cpp
 --- codeblocks-20.03/src/src/examinememorydlg.cpp	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-02-26 21:37:54.658145113 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-02-27 17:09:02.351788665 +0300
 @@ -1,7 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -18,7 +18,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -41,31 +42,73 @@
+@@ -41,31 +42,75 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -77,6 +77,8 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +	  m_pText->ShowPosition(m_result * parttext - parttext + 1);
 +        //  Manager::Get()->GetLogManager()->DebugLog(_T("\nPosition1: ") + wxString::Format(wxT("%i"), (int)m_pText->GetBorder()));
 +       }
++	else
++	m_pText->ShowPosition(m_pText->GetLastPosition());
 +    }
 +      m_pText->Thaw();
  }
@@ -95,7 +97,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
          m_LineText[i] = _T(' ');
  }
  
-@@ -81,6 +124,13 @@
+@@ -81,15 +126,22 @@
      return a;
  }
  
@@ -108,8 +110,10 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +
  void ExamineMemoryDlg::AddError(const wxString& err)
  {
-     m_pText->AppendText(err + _T('\n'));
-@@ -89,7 +139,7 @@
+-    m_pText->AppendText(err + _T('\n'));
++    m_pText->WriteText(_T('\n') + err + _T('\n'));
+ }
+ 
  void ExamineMemoryDlg::AddHexByte(const wxString& addr, const wxString& hexbyte)
  {
  //    m_pDbg->Log(_T("AddHexByte(") + addr + _T(", ") + hexbyte + _T(')'));
@@ -118,7 +122,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  
      if (m_LastRowStartingAddress == 0)
      {
-@@ -102,37 +152,32 @@
+@@ -102,37 +154,32 @@
          addr.ToULong(&m_LastRowStartingAddress, 16);
      }
  
@@ -144,14 +148,9 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      {
 -        // filled 16 bytes window; append text and reset accumulator array
 -        if (m_ByteCounter != 16) // after the first line,
-+		 if (m_ByteCounter != m_ColumnsCtrl) // after the first line,
-             m_pText->AppendText(_T('\n')); // prepend a newline
+-            m_pText->AppendText(_T('\n')); // prepend a newline
 -        m_LineText[23] = _T('|'); // put a "separator" in the middle (just to ease reading a bit)
-+       
-+		 m_pText->AppendText(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
-+                 wxString mystring2(m_LineText);
-+                 m_pText->AppendText(mystring2.Left(m_PartLength + m_ColumnsCtrl));
- 
+-
 -        unsigned long a;
 -        addr.ToULong(&a, 16);
 -        m_pText->AppendText(wxString::Format(_T("0x%lx: %.67s"), m_LastRowStartingAddress, m_LineText));
@@ -160,6 +159,13 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -        // update starting address for next row
 -        // add 8 bytes: addr is the start address of the second 8-byte chunk of this line, so next line is +8
 -        m_LastRowStartingAddress = a + 8;
++		 if (m_ByteCounter != m_ColumnsCtrl) // after the first line,
++            m_pText->WriteText(_T('\n')); // prepend a newline
++       
++		 m_pText->WriteText(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
++                 wxString mystring2(m_LineText);
++                 m_pText->WriteText(mystring2.Left(m_PartLength + m_ColumnsCtrl));
++
 +        m_LastRowStartingAddress += m_ColumnsCtrl;
      }
  }
@@ -168,7 +174,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -141,6 +186,11 @@
+@@ -141,6 +188,11 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -180,7 +186,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
-@@ -157,6 +207,9 @@
+@@ -157,6 +209,9 @@
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
      if (plugin)
@@ -194,7 +200,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/src/examinememorydlg.h
 --- codeblocks-20.03/src/src/examinememorydlg.h	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-02-26 21:30:40.730108815 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-02-27 17:02:13.220040077 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -227,7 +233,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
          DECLARE_EVENT_TABLE()
 diff -ruN codeblocks-20.03/src/src/resources/memdump.xrc codeblocks-20.03-new/src/src/resources/memdump.xrc
 --- codeblocks-20.03/src/src/resources/memdump.xrc	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-02-26 21:30:40.730108815 +0300
++++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-02-27 17:02:13.220040077 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
