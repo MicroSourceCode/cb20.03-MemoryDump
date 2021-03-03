@@ -8,7 +8,6 @@ Can select the following number of columns to display:
 
 Svn version: 12293
 
-For Windows system, change code parttext += m_pText->GetLineLength(i) + 1  on  parttext += m_pText->GetLineLength(i) + 2.
 The patch works stably only if the font is set to more than 10 pt, change the line wxFont font (8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL); the size you want in file examinememorydlg.cpp.
 
 ![Screenshot](/img/1.jpg)![Screenshot](/img/2.jpg)
