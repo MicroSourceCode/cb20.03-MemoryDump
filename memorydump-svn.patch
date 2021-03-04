@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-03 17:22:04.912060659 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-04 19:55:16.970224752 +0300
 @@ -22,11 +22,12 @@
  #include "examinememorydlg.h"
  #include "debuggermanager.h"
@@ -133,7 +133,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      {
          // because we 'll be appending each row *after* we have consumed it
          // and then "addr" will point to the next row's starting address,
-@@ -105,33 +157,36 @@
+@@ -105,33 +157,34 @@
      }
  
  #define HEX_OFFSET(a) (a*3)
@@ -168,14 +168,12 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +	wxString str2;
 +	if (m_ByteCounter != m_ColumnsCtrl) // after the first line,
 +	str2.Append(_T('\n'));
-+
 +	str2.Append(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
-+        str2.Append(mystring2.Left(m_PartLength + m_ColumnsCtrl));
 +	str2.Append(static_cast<wxChar *>(m_LineText), (m_PartLength + m_ColumnsCtrl));
-+
 +	m_pText->WriteText(str2);
 +
 +        m_LastRowStartingAddress += m_ColumnsCtrl;
++        str2.Empty();
      }
 -}
  
@@ -185,7 +183,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,7 +195,11 @@
+@@ -140,7 +193,11 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -198,7 +196,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -155,7 +214,10 @@
+@@ -155,7 +212,10 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
