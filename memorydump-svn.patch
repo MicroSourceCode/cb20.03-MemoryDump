@@ -11,13 +11,13 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-04 19:55:16.970224752 +0300
-@@ -22,11 +22,12 @@
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-05 10:26:20.789828313 +0300
+@@ -21,12 +21,12 @@
+ 
  #include "examinememorydlg.h"
  #include "debuggermanager.h"
- 
--#include <cinttypes> // For PRIx64
-+bool direction = true;
+-
+ #include <cinttypes> // For PRIx64
  
  BEGIN_EVENT_TABLE(ExamineMemoryDlg, wxPanel)
      EVT_BUTTON(XRCID("btnGo"), ExamineMemoryDlg::OnGo)
@@ -26,7 +26,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -43,31 +44,75 @@
+@@ -43,31 +43,74 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -61,9 +61,9 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +    }
 +    else if ( m_start )
 +    {
-+       int w, h, clientHeight;
-+       m_pText->GetClientSize(&w, &h);
-+       int charHeight = m_pText->GetCharHeight();
++       int charHeight, h, clientHeight;
++       m_pText->GetClientSize(&charHeight, &h);
++       charHeight = m_pText->GetCharHeight();
 +
 +       clientHeight = (h + (h % charHeight)) / charHeight;
 +       unsigned maxScrollPosition = m_pText->GetScrollRange(wxVERTICAL)- h + 2;
@@ -72,14 +72,13 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +       if ( position < maxScrollPosition )
 +       {
 +			  int result = position / charHeight + clientHeight;
-+                          int parttext = 0, col;
-+			    
-+                          col = result < m_result ? m_result - result : result - m_result;
++                          int col = result < m_result ? m_result - result : result - m_result;
 +
 +                          if  ( col > 2 )
 +                               m_result = result;
 +
-+			 m_pText->ShowPosition(m_pText->XYToPosition(2, m_result - 1));
++			 m_pText->ShowPosition(m_pText->XYToPosition(1, m_result - 1));
++
 +    //    Manager::Get()->GetLogManager()->DebugLog(_T("\nNumber: ") + wxString::Format(wxT("%i"), parttext + 1));
 +       }
 +	else
@@ -95,7 +94,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  {
 -    m_pText->Clear();
 +    m_ColumnsCtrl = GetCols();
-+    m_pText->ChangeValue("");
++    m_pText->Replace(0, m_pText->GetLastPosition(), "");
      m_LastRowStartingAddress = 0;
      m_ByteCounter = 0;
 -    for (int i = 0; i < 67; ++i)
@@ -105,7 +104,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
          m_LineText[i] = _T(' ');
  }
  
-@@ -83,17 +128,24 @@
+@@ -83,17 +126,24 @@
      return a;
  }
  
@@ -133,7 +132,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      {
          // because we 'll be appending each row *after* we have consumed it
          // and then "addr" will point to the next row's starting address,
-@@ -105,33 +157,34 @@
+@@ -105,33 +155,34 @@
      }
  
  #define HEX_OFFSET(a) (a*3)
@@ -183,7 +182,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,7 +193,11 @@
+@@ -140,7 +191,11 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -196,7 +195,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -155,7 +212,10 @@
+@@ -155,7 +210,10 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
