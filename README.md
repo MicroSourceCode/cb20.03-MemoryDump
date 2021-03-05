@@ -7,6 +7,7 @@ Can select the following number of columns to display:
 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32. Also, the window will restore the position of the viewed data.
 
 Svn version: 12293
+
 Stable version:20.03
 
 The patch works stably only if the font is set to more than 10 pt, change the line wxFont font (8, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL); the size you want in file examinememorydlg.cpp.
