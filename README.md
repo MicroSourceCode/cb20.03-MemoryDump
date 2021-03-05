@@ -1,4 +1,4 @@
-My patch for codeblocks improves the Memory Dump dockable dialog.
+My patch for codeblocks 20.03 improves the Memory Dump dockable dialog.
 I added a list box to it to select the number of columns to display.
 Something like this is done in modern IDEs like AVR studio and other...
 This is useful for debugging microcontrollers, viewing commands in 
