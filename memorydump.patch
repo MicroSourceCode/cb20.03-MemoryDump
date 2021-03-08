@@ -1,6 +1,6 @@
 diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-new/src/include/cbdebugger_interfaces.h
 --- codeblocks-20.03/src/include/cbdebugger_interfaces.h	2020-03-28 15:36:02.000000000 +0300
-+++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-05 14:48:18.326493596 +0300
++++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-08 14:07:57.405962000 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src/src/examinememorydlg.cpp
 --- codeblocks-20.03/src/src/examinememorydlg.cpp	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-05 14:48:18.326493596 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-08 14:08:39.618343507 +0300
 @@ -25,6 +25,7 @@
  BEGIN_EVENT_TABLE(ExamineMemoryDlg, wxPanel)
      EVT_BUTTON(XRCID("btnGo"), ExamineMemoryDlg::OnGo)
@@ -20,7 +20,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -41,31 +42,74 @@
+@@ -41,31 +42,75 @@
  
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      int bytes = c->ReadInt(wxT("/common/examine_memory/size_to_show"), 32);
@@ -37,6 +37,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +    wxComboBox *combo2 = XRCCTRL(*this, "colSelect", wxComboBox);
 +    if (!combo2->SetStringSelection(strCols))
 +        combo2->SetSelection(3); // Default is 8 columns
++    m_pText->SetDoubleBuffered(true);
      Clear();
  }
  
@@ -71,13 +72,13 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +                          if  ( col > 2 )
 +                               m_result = result;
 +
-+			 m_pText->ShowPosition(m_pText->XYToPosition(1, m_result - 1));
++			 m_pText->SetInsertionPoint(m_pText->XYToPosition(1, m_result - 1));
 +
 +    //    Manager::Get()->GetLogManager()->DebugLog(_T("\nNumber: ") + wxString::Format(wxT("%i"), parttext + 1));
 +       }
 +	else
 +       {
-+	m_pText->ShowPosition(m_pText->GetLastPosition());
++	m_pText->SetInsertionPoint(-1);
 +       }
 +
 +    }
@@ -88,7 +89,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  {
 -    m_pText->Clear();
 +    m_ColumnsCtrl = GetCols();
-+    m_pText->Replace(0, m_pText->GetLastPosition(), "");
++    m_pText->ChangeValue("");
      m_LastRowStartingAddress = 0;
      m_ByteCounter = 0;
 -    for (int i = 0; i < 67; ++i)
@@ -98,7 +99,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
          m_LineText[i] = _T(' ');
  }
  
-@@ -81,15 +125,22 @@
+@@ -81,15 +126,22 @@
      return a;
  }
  
@@ -123,7 +124,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  
      if (m_LastRowStartingAddress == 0)
      {
-@@ -99,37 +150,32 @@
+@@ -99,37 +151,32 @@
  
          // if it's zero (i.e this is the first row), keep "addr" as starting address for this row.
          // m_LastRowStartingAddress will be set again when we 've consumed this row...
@@ -174,7 +175,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      }
  }
  
-@@ -141,7 +187,11 @@
+@@ -141,7 +188,11 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -187,7 +188,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -156,7 +206,10 @@
+@@ -156,7 +207,10 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
@@ -201,7 +202,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  }
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/src/examinememorydlg.h
 --- codeblocks-20.03/src/src/examinememorydlg.h	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-05 14:52:15.388362865 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-08 14:07:57.405962000 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -234,7 +235,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
          DECLARE_EVENT_TABLE()
 diff -ruN codeblocks-20.03/src/src/resources/memdump.xrc codeblocks-20.03-new/src/src/resources/memdump.xrc
 --- codeblocks-20.03/src/src/resources/memdump.xrc	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-05 14:48:18.326493596 +0300
++++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-08 14:07:57.405962000 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
