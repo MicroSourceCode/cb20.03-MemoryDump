@@ -1,6 +1,6 @@
 diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebugger_interfaces.h
 --- trunk/src/include/cbdebugger_interfaces.h	2021-02-18 13:48:28.000000000 +0300
-+++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-11 20:01:06.079720810 +0300
++++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-11 20:34:16.207522630 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-11 20:07:28.647553418 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-11 20:34:16.231522868 +0300
 @@ -21,12 +21,12 @@
  
  #include "examinememorydlg.h"
@@ -165,7 +165,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  }
 diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
 --- trunk/src/src/examinememorydlg.h	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.h	2021-03-11 20:08:12.015987633 +0300
++++ trunk-new/src/src/examinememorydlg.h	2021-03-11 20:34:44.459802395 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -182,7 +182,7 @@ diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
          void AddError(const wxString& err) override;
          void AddHexByte(const wxString& addr, const wxString& hexbyte) override;
          void EnableWindow(bool enable) override;
-@@ -33,9 +35,10 @@
+@@ -33,9 +35,11 @@
          void OnGo(wxCommandEvent& event);
  
      private:
@@ -191,13 +191,14 @@ diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
          size_t m_ByteCounter;
 -        wxChar m_LineText[67]; // 16*3 "7F " + 3 "   " + 16 "."
 +        unsigned m_ColumnsCtrl;
++        unsigned m_PartLength;
 +        wxChar m_LineText[128];
          uint64_t m_LastRowStartingAddress;
      private:
          DECLARE_EVENT_TABLE()
 diff -ruN trunk/src/src/resources/memdump.xrc trunk-new/src/src/resources/memdump.xrc
 --- trunk/src/src/resources/memdump.xrc	2021-02-18 13:48:23.000000000 +0300
-+++ trunk-new/src/src/resources/memdump.xrc	2021-03-11 20:12:04.398308190 +0300
++++ trunk-new/src/src/resources/memdump.xrc	2021-03-11 20:34:16.287523422 +0300
 @@ -7,26 +7,26 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
