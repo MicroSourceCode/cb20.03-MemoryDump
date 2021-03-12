@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-12 14:24:48.237051251 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-12 14:33:25.738007874 +0300
 @@ -21,12 +21,12 @@
  
  #include "examinememorydlg.h"
@@ -83,7 +83,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::AddError(const wxString& err)
  {
 -    m_pText->AppendText(err + _T('\n'));
-+    m_pText->WriteText(err);
++    m_pText->Append(err);
  }
  
  void ExamineMemoryDlg::AddHexByte(const wxString& addr, const wxString& hexbyte)
