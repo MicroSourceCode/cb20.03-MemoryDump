@@ -1,6 +1,6 @@
 diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-new/src/include/cbdebugger_interfaces.h
 --- codeblocks-20.03/src/include/cbdebugger_interfaces.h	2020-03-28 15:36:02.000000000 +0300
-+++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-11 20:31:56.250136593 +0300
++++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-14 19:33:50.663454145 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src/src/examinememorydlg.cpp
 --- codeblocks-20.03/src/src/examinememorydlg.cpp	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-11 20:31:56.250136593 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-14 20:03:33.155568066 +0300
 @@ -25,6 +25,7 @@
  BEGIN_EVENT_TABLE(ExamineMemoryDlg, wxPanel)
      EVT_BUTTON(XRCID("btnGo"), ExamineMemoryDlg::OnGo)
@@ -20,7 +20,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -34,19 +35,25 @@
+@@ -34,25 +35,33 @@
      //ctor
      if (!wxXmlResource::Get()->LoadPanel(this, parent, _T("MemoryDumpPanel")))
          return;
@@ -45,14 +45,24 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +    wxComboBox *combo2 = XRCCTRL(*this, "colSelect", wxComboBox);
 +    if (!combo2->SetStringSelection(strCols))
 +        combo2->SetSelection(3); // Default is 8 columns
++    m_pText->SetDoubleBuffered(true);
      Clear();
  }
  
-@@ -62,10 +69,13 @@
+ void ExamineMemoryDlg::Begin()
+ {
+     m_pText->Freeze();
++    m_count = 0;
+ }
+ 
+ void ExamineMemoryDlg::End()
+@@ -62,10 +71,15 @@
  
  void ExamineMemoryDlg::Clear()
  {
 +    m_ColumnsCtrl = GetCols();
++    m_numStr = GetBytes()/m_ColumnsCtrl  * m_ColumnsCtrl - 1;
++    m_numStrEnd = GetBytes() % m_ColumnsCtrl;
      m_pText->Clear();
      m_LastRowStartingAddress = 0;
      m_ByteCounter = 0;
@@ -63,7 +73,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
          m_LineText[i] = _T(' ');
  }
  
-@@ -81,15 +91,22 @@
+@@ -81,56 +95,68 @@
      return a;
  }
  
@@ -86,14 +96,25 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -    int bcmod = m_ByteCounter % 16;
 +    int bcmod = m_ByteCounter % m_ColumnsCtrl;
  
-     if (m_LastRowStartingAddress == 0)
+-    if (m_LastRowStartingAddress == 0)
++   switch (m_LastRowStartingAddress)
      {
-@@ -99,37 +116,30 @@
- 
-         // if it's zero (i.e this is the first row), keep "addr" as starting address for this row.
-         // m_LastRowStartingAddress will be set again when we 've consumed this row...
+-        // because we 'll be appending each row *after* we have consumed it
+-        // and then "addr" will point to the next row's starting address,
+-        // we 'll keep the current row's starting address in "m_LastRowStartingAddress".
+-
+-        // if it's zero (i.e this is the first row), keep "addr" as starting address for this row.
+-        // m_LastRowStartingAddress will be set again when we 've consumed this row...
 -        addr.ToULong(&m_LastRowStartingAddress, 16);
-+        m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
++	case 0:
++	    m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
++	    break;
++	case 8:
++	case 16:
++	case 24:
++	    if (m_ColumnsCtrl > m_LastRowStartingAddress)
++		m_LastRowStartingAddress = 0;
++	    break;
      }
  
  #define HEX_OFFSET(a) (a*3)
@@ -114,6 +135,17 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -    // flush every 16 bytes
 -    if (m_ByteCounter != 0 && m_ByteCounter % 16 == 0)
 +    if (m_ByteCounter != 0 && m_ByteCounter % m_ColumnsCtrl == 0)
++    {
++	wxString str2;
++ 	str2.Append(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
++	str2.Append(static_cast<wxChar *>(m_LineText), (m_PartLength + m_ColumnsCtrl));
++	m_pText->Append(str2);
++	if (m_count == m_numStr)
++	   for (int i = 0; i < 128; ++i)
++    	    m_LineText[i] = _T(' ');
++        m_LastRowStartingAddress += m_ColumnsCtrl;
++    }
++    else if (m_count == m_numStr + m_numStrEnd && m_numStrEnd > 0)
      {
 -        // filled 16 bytes window; append text and reset accumulator array
 -        if (m_ByteCounter != 16) // after the first line,
@@ -129,15 +161,15 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -        // add 8 bytes: addr is the start address of the second 8-byte chunk of this line, so next line is +8
 -        m_LastRowStartingAddress = a + 8;
 +	wxString str2;
-+ 	str2.Append(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
++	str2.Append(wxString::Format(_T("0x%lx: "), m_LastRowStartingAddress));
 +	str2.Append(static_cast<wxChar *>(m_LineText), (m_PartLength + m_ColumnsCtrl));
 +	m_pText->Append(str2);
-+        m_LastRowStartingAddress += m_ColumnsCtrl;
-+        str2.Empty();
      }
++    ++m_count;
  }
  
-@@ -141,7 +151,7 @@
+ void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
+@@ -141,7 +167,7 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -146,7 +178,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -158,5 +168,4 @@
+@@ -158,5 +184,4 @@
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
@@ -154,7 +186,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  }
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/src/examinememorydlg.h
 --- codeblocks-20.03/src/src/examinememorydlg.h	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-11 20:32:54.402712522 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-14 19:36:34.520991542 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -171,7 +203,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
          void AddError(const wxString& err);
          void AddHexByte(const wxString& addr, const wxString& hexbyte);
          void EnableWindow(bool enable);
-@@ -33,9 +35,11 @@
+@@ -33,10 +35,16 @@
          void OnGo(wxCommandEvent& event);
  
      private:
@@ -183,11 +215,16 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
 +        unsigned m_ColumnsCtrl;
 +        wxChar m_LineText[128];
          unsigned long m_LastRowStartingAddress;
++        unsigned m_count = 0;
++        unsigned m_numStr;
++        unsigned m_numStrEnd;
++
      private:
          DECLARE_EVENT_TABLE()
+ };
 diff -ruN codeblocks-20.03/src/src/resources/memdump.xrc codeblocks-20.03-new/src/src/resources/memdump.xrc
 --- codeblocks-20.03/src/src/resources/memdump.xrc	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-11 20:31:56.250136593 +0300
++++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-14 19:33:50.663454145 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
