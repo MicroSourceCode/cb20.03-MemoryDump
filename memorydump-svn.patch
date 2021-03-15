@@ -1,6 +1,6 @@
 diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebugger_interfaces.h
 --- trunk/src/include/cbdebugger_interfaces.h	2021-02-18 13:48:28.000000000 +0300
-+++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-14 11:04:51.584506459 +0300
++++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-15 10:11:43.137327434 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-14 11:47:57.589067559 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-15 10:14:52.994839869 +0300
 @@ -21,12 +21,12 @@
  
  #include "examinememorydlg.h"
@@ -26,7 +26,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -36,25 +36,33 @@
+@@ -36,25 +36,34 @@
      //ctor
      if (!wxXmlResource::Get()->LoadPanel(this, parent, _T("MemoryDumpPanel")))
          return;
@@ -51,7 +51,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 +    wxComboBox *combo2 = XRCCTRL(*this, "colSelect", wxComboBox);
 +    if (!combo2->SetStringSelection(strCols))
 +        combo2->SetSelection(3); // Default is 8 columns
-+    this->SetDoubleBuffered(true);
++    m_pText->SetDoubleBuffered(true);
      Clear();
  }
  
@@ -59,10 +59,11 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  {
      m_pText->Freeze();
 +    m_count = 0;
++    isNull = false;
  }
  
  void ExamineMemoryDlg::End()
-@@ -64,10 +72,15 @@
+@@ -64,10 +73,15 @@
  
  void ExamineMemoryDlg::Clear()
  {
@@ -79,7 +80,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
          m_LineText[i] = _T(' ');
  }
  
-@@ -83,55 +96,81 @@
+@@ -83,55 +97,82 @@
      return a;
  }
  
@@ -120,11 +121,12 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
 -        m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
 +	case 0:
 +	     m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
++	     isNull = true;
 +	    break;
 +	case 8:
 +	case 16:
 +	case 24:
-+	    if (m_ColumnsCtrl > m_LastRowStartingAddress)
++	    if (m_ColumnsCtrl > m_LastRowStartingAddress && isNull)
 +		m_LastRowStartingAddress = 0;
 +	    break;
      }
@@ -186,7 +188,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
  {
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
-@@ -140,7 +179,8 @@
+@@ -140,7 +181,8 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -196,7 +198,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -155,7 +195,7 @@
+@@ -155,7 +197,7 @@
      XRCCTRL(*this, "txtAddress", wxTextCtrl)->SetValue(addr);
  
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
@@ -207,7 +209,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  }
 diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
 --- trunk/src/src/examinememorydlg.h	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.h	2021-03-14 10:27:56.230247901 +0300
++++ trunk-new/src/src/examinememorydlg.h	2021-03-15 10:12:41.377813134 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -238,14 +240,14 @@ diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
 +        unsigned m_PartLength;
 +        wxChar m_LineText[128];
          uint64_t m_LastRowStartingAddress;
-+	unsigned m_count = 0;
-+
++        unsigned m_count = 0;
++        bool isNull;
      private:
          DECLARE_EVENT_TABLE()
  };
 diff -ruN trunk/src/src/resources/memdump.xrc trunk-new/src/src/resources/memdump.xrc
 --- trunk/src/src/resources/memdump.xrc	2021-02-18 13:48:23.000000000 +0300
-+++ trunk-new/src/src/resources/memdump.xrc	2021-03-14 11:04:51.584506459 +0300
++++ trunk-new/src/src/resources/memdump.xrc	2021-03-15 10:11:43.137327434 +0300
 @@ -7,26 +7,26 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
