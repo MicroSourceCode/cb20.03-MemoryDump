@@ -45,7 +45,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 +    wxComboBox *combo2 = XRCCTRL(*this, "colSelect", wxComboBox);
 +    if (!combo2->SetStringSelection(strCols))
 +        combo2->SetSelection(3); // Default is 8 columns
-+    m_pText->SetDoubleBuffered(true);
++    m_pText->SetDoubleBuffered(false);
      Clear();
  }
  
