@@ -1,6 +1,6 @@
 diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-new/src/include/cbdebugger_interfaces.h
 --- codeblocks-20.03/src/include/cbdebugger_interfaces.h	2020-03-28 15:36:02.000000000 +0300
-+++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-14 19:33:50.663454145 +0300
++++ codeblocks-20.03-new/src/include/cbdebugger_interfaces.h	2021-03-15 15:35:59.745156124 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN codeblocks-20.03/src/include/cbdebugger_interfaces.h codeblocks-20.03-
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src/src/examinememorydlg.cpp
 --- codeblocks-20.03/src/src/examinememorydlg.cpp	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-14 20:03:33.155568066 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.cpp	2021-03-15 15:41:10.228324758 +0300
 @@ -25,6 +25,7 @@
  BEGIN_EVENT_TABLE(ExamineMemoryDlg, wxPanel)
      EVT_BUTTON(XRCID("btnGo"), ExamineMemoryDlg::OnGo)
@@ -20,7 +20,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      EVT_TEXT_ENTER(XRCID("txtAddress"), ExamineMemoryDlg::OnGo)
  END_EVENT_TABLE()
  
-@@ -34,25 +35,33 @@
+@@ -34,25 +35,34 @@
      //ctor
      if (!wxXmlResource::Get()->LoadPanel(this, parent, _T("MemoryDumpPanel")))
          return;
@@ -52,11 +52,12 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  void ExamineMemoryDlg::Begin()
  {
      m_pText->Freeze();
++    isNull = false;
 +    m_count = 0;
  }
  
  void ExamineMemoryDlg::End()
-@@ -62,10 +71,15 @@
+@@ -62,10 +72,15 @@
  
  void ExamineMemoryDlg::Clear()
  {
@@ -73,7 +74,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
          m_LineText[i] = _T(' ');
  }
  
-@@ -81,56 +95,68 @@
+@@ -81,56 +96,69 @@
      return a;
  }
  
@@ -108,11 +109,12 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
 -        addr.ToULong(&m_LastRowStartingAddress, 16);
 +	case 0:
 +	    m_LastRowStartingAddress = cbDebuggerStringToAddress(addr);
++	    isNull = true;
 +	    break;
 +	case 8:
 +	case 16:
 +	case 24:
-+	    if (m_ColumnsCtrl > m_LastRowStartingAddress)
++	    if (m_ColumnsCtrl > m_LastRowStartingAddress && isNull)
 +		m_LastRowStartingAddress = 0;
 +	    break;
      }
@@ -169,7 +171,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  }
  
  void ExamineMemoryDlg::OnGo(cb_unused wxCommandEvent& event)
-@@ -141,7 +167,7 @@
+@@ -141,7 +169,7 @@
      // so it is the same next time the dialog is used.
      ConfigManager *c = Manager::Get()->GetConfigManager(wxT("debugger_common"));
      c->Write(wxT("/common/examine_memory/size_to_show"), GetBytes());
@@ -178,7 +180,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
  }
-@@ -158,5 +184,4 @@
+@@ -158,5 +186,4 @@
      cbDebuggerPlugin *plugin = Manager::Get()->GetDebuggerManager()->GetActiveDebugger();
      if (plugin)
          plugin->RequestUpdate(cbDebuggerPlugin::ExamineMemory);
@@ -186,7 +188,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.cpp codeblocks-20.03-new/src
  }
 diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/src/examinememorydlg.h
 --- codeblocks-20.03/src/src/examinememorydlg.h	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-14 19:36:34.520991542 +0300
++++ codeblocks-20.03-new/src/src/examinememorydlg.h	2021-03-15 15:36:56.777745881 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -203,7 +205,7 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
          void AddError(const wxString& err);
          void AddHexByte(const wxString& addr, const wxString& hexbyte);
          void EnableWindow(bool enable);
-@@ -33,10 +35,16 @@
+@@ -33,10 +35,17 @@
          void OnGo(wxCommandEvent& event);
  
      private:
@@ -218,13 +220,14 @@ diff -ruN codeblocks-20.03/src/src/examinememorydlg.h codeblocks-20.03-new/src/s
 +        unsigned m_count = 0;
 +        unsigned m_numStr;
 +        unsigned m_numStrEnd;
++        bool isNull;
 +
      private:
          DECLARE_EVENT_TABLE()
  };
 diff -ruN codeblocks-20.03/src/src/resources/memdump.xrc codeblocks-20.03-new/src/src/resources/memdump.xrc
 --- codeblocks-20.03/src/src/resources/memdump.xrc	2020-03-28 15:36:04.000000000 +0300
-+++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-14 19:33:50.663454145 +0300
++++ codeblocks-20.03-new/src/src/resources/memdump.xrc	2021-03-15 15:35:59.749156166 +0300
 @@ -7,18 +7,18 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
