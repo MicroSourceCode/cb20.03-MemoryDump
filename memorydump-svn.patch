@@ -1,6 +1,6 @@
 diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebugger_interfaces.h
 --- trunk/src/include/cbdebugger_interfaces.h	2021-02-18 13:48:28.000000000 +0300
-+++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-17 17:20:04.395474304 +0300
++++ trunk-new/src/include/cbdebugger_interfaces.h	2021-03-19 14:29:24.309501085 +0300
 @@ -85,6 +85,7 @@
          virtual void Clear() = 0;
          virtual wxString GetBaseAddress() = 0;
@@ -11,7 +11,7 @@ diff -ruN trunk/src/include/cbdebugger_interfaces.h trunk-new/src/include/cbdebu
          virtual void EnableWindow(bool enable) = 0;
 diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.cpp
 --- trunk/src/src/examinememorydlg.cpp	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.cpp	2021-03-17 17:26:25.599080364 +0300
++++ trunk-new/src/src/examinememorydlg.cpp	2021-03-19 21:07:13.138480106 +0300
 @@ -21,12 +21,12 @@
  
  #include "examinememorydlg.h"
@@ -80,7 +80,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
      m_ByteCounter = 0;
 -    for (int i = 0; i < 67; ++i)
 +
-+    m_PartLength = (m_ColumnsCtrl * 2) + m_ColumnsCtrl;
++    m_PartLength = (m_ColumnsCtrl * 3);
 +   for (int i = 0; i < 128; ++i)
          m_LineText[i] = _T(' ');
  }
@@ -214,7 +214,7 @@ diff -ruN trunk/src/src/examinememorydlg.cpp trunk-new/src/src/examinememorydlg.
  }
 diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
 --- trunk/src/src/examinememorydlg.h	2021-02-18 13:48:20.000000000 +0300
-+++ trunk-new/src/src/examinememorydlg.h	2021-03-17 17:24:53.942206987 +0300
++++ trunk-new/src/src/examinememorydlg.h	2021-03-19 14:29:24.309501085 +0300
 @@ -1,6 +1,7 @@
  /*
   * This file is part of the Code::Blocks IDE and licensed under the GNU General Public License, version 3
@@ -253,13 +253,13 @@ diff -ruN trunk/src/src/examinememorydlg.h trunk-new/src/src/examinememorydlg.h
  };
 diff -ruN trunk/src/src/resources/memdump.xrc trunk-new/src/src/resources/memdump.xrc
 --- trunk/src/src/resources/memdump.xrc	2021-02-18 13:48:23.000000000 +0300
-+++ trunk-new/src/src/resources/memdump.xrc	2021-03-17 17:20:04.395474304 +0300
++++ trunk-new/src/src/resources/memdump.xrc	2021-03-19 21:05:22.073463327 +0300
 @@ -7,26 +7,26 @@
  				<object class="wxBoxSizer">
  					<object class="sizeritem">
  						<object class="wxStaticText" name="ID_STATICTEXT1">
 -							<label>Address:</label>
-+							<label>Adr:</label>
++							<label>Addr:</label>
  						</object>
  						<flag>wxALIGN_CENTER_VERTICAL</flag>
 -						<border>4</border>
